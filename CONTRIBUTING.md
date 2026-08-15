@@ -18,6 +18,7 @@ Put tests next to the behavior, not the UI:
 | CSV interop | `tests/test_csv_io.py` |
 | Key mapping | `tests/test_hook_chars.py` |
 | Engine match path | `tests/test_engine.py` |
+| Start menu install | `tests/test_install.py` |
 
 Do not install a real keyboard hook in tests. Drive `KeyboardEngine._handle_key` or pure functions.
 

@@ -34,17 +34,17 @@ def read_bundle(path: Path) -> Library:
     try:
         data = json.loads(path.read_text(encoding="utf-8-sig"))
     except (OSError, json.JSONDecodeError) as exc:
-        raise TransferError("Could not read an Expandr library file.") from exc
+        raise TransferError("Could not read a TextExpander library file.") from exc
     if not isinstance(data, dict):
-        raise TransferError("Could not read an Expandr library file.")
+        raise TransferError("Could not read a TextExpander library file.")
     if data.get("format") == BUNDLE_FORMAT:
         inner = data.get("library")
         if not isinstance(inner, dict) or "folders" not in inner:
-            raise TransferError("This file is not a complete Expandr library.")
+            raise TransferError("This file is not a complete TextExpander library.")
         return Library.from_dict(inner)
     if "folders" in data:
         return Library.from_dict(data)
-    raise TransferError("This file is not an Expandr library.")
+    raise TransferError("This file is not a TextExpander library.")
 
 
 def import_bundle(dest: Library, path: Path, *, merge: bool) -> ImportResult:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from io import BytesIO
+from pathlib import Path
 
 from PIL import Image, ImageDraw
 
@@ -32,3 +33,10 @@ def icon_bytes() -> bytes:
     buffer = BytesIO()
     make_icon(256).save(buffer, format="PNG")
     return buffer.getvalue()
+
+
+def write_ico(path: Path) -> Path:
+    dest = Path(path)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    make_icon(256).save(dest, format="ICO", sizes=[(16, 16), (32, 32), (48, 48), (256, 256)])
+    return dest

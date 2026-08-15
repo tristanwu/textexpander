@@ -21,6 +21,7 @@ from expandr.ui.fill_in import ask_fields
 from expandr.ui.main_window import MainWindow
 from expandr.ui.search import ask_snippet
 from expandr.ui.settings import SettingsWindow
+from expandr.identity import APP_NAME
 from expandr.win32api import foreground_hwnd, foreground_process_name, get_clipboard_text
 
 
@@ -30,7 +31,7 @@ class ExpandrApp:
         ctk.set_default_color_theme("blue")
         self.root = ctk.CTk()
         self.root.withdraw()
-        self.root.title("Expandr")
+        self.root.title(APP_NAME)
         self.library = load_library()
         if self.library.settings.start_with_windows:
             set_start_with_windows(True)
@@ -165,7 +166,7 @@ class ExpandrApp:
 
     def _start_tray(self) -> None:
         icon = make_icon(64)
-        self.tray = pystray.Icon("Expandr", icon, "Expandr", self._tray_menu())
+        self.tray = pystray.Icon(APP_NAME, icon, APP_NAME, self._tray_menu())
         threading.Thread(target=self.tray.run, name="expandr-tray", daemon=True).start()
 
     def _tray_menu(self):
@@ -182,7 +183,7 @@ class ExpandrApp:
     def _refresh_tray(self) -> None:
         if self.tray:
             self.tray.menu = self._tray_menu()
-            self.tray.title = "Expandr (paused)" if self.library.settings.paused else "Expandr"
+            self.tray.title = f"{APP_NAME} (paused)" if self.library.settings.paused else APP_NAME
 
     def shutdown(self) -> None:
         if self._dead:

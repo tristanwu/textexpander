@@ -123,7 +123,7 @@ def claim_singleton() -> bool:
     if _mutex_handle:
         return True
     kernel32.SetLastError(0)
-    handle = kernel32.CreateMutexW(None, True, "Local\\ExpandrSingleton")
+    handle = kernel32.CreateMutexW(None, True, "Local\\TextExpanderSingleton")
     if ctypes.get_last_error() == ERROR_ALREADY_EXISTS:
         if handle:
             kernel32.CloseHandle(handle)

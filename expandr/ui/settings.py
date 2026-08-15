@@ -7,6 +7,7 @@ import customtkinter as ctk
 
 from expandr.csv_io import export_csv, import_csv
 from expandr.models import Library, TriggerMode
+from expandr.install import install_start_menu, is_on_start_menu, uninstall_start_menu
 from expandr.startup import set_start_with_windows
 from expandr.store import data_dir, save_library
 from expandr.transfer import TransferError, import_bundle, export_bundle
@@ -35,6 +36,10 @@ class SettingsWindow(ctk.CTkToplevel):
         ctk.CTkSwitch(self, text="Start with Windows", variable=self.startup_var, command=self._toggle_startup).pack(
             anchor="w", **pad
         )
+        self.start_menu_var = ctk.BooleanVar(value=is_on_start_menu())
+        ctk.CTkSwitch(
+            self, text="Show in Start menu / search", variable=self.start_menu_var, command=self._toggle_start_menu
+        ).pack(anchor="w", **pad)
 
         ctk.CTkLabel(self, text="Ctrl+Shift+/  search     Ctrl+Shift+P  pause", text_color="gray").pack(
             anchor="w", padx=16
@@ -88,6 +93,16 @@ class SettingsWindow(ctk.CTkToplevel):
         save_library(self.library)
         self.on_change()
 
+    def _toggle_start_menu(self) -> None:
+        try:
+            if self.start_menu_var.get():
+                install_start_menu()
+            else:
+                uninstall_start_menu()
+        except Exception as exc:
+            self.start_menu_var.set(is_on_start_menu())
+            messagebox.showerror("Start menu", str(exc))
+
     def _toggle_startup(self) -> None:
         enabled = bool(self.startup_var.get())
         self.library.settings.start_with_windows = enabled
@@ -102,8 +117,8 @@ class SettingsWindow(ctk.CTkToplevel):
     def _export_bundle(self) -> None:
         path = filedialog.asksaveasfilename(
             defaultextension=".json",
-            filetypes=[("Expandr library", "*.json"), ("All", "*.*")],
-            initialfile="expandr-library.json",
+            filetypes=[("TextExpander library", "*.json"), ("All", "*.*")],
+            initialfile="textexpander-library.json",
         )
         if not path:
             return
@@ -111,7 +126,7 @@ class SettingsWindow(ctk.CTkToplevel):
         messagebox.showinfo("Export", "Library saved. Copy that file to the other PC and use Import library.")
 
     def _import_bundle(self) -> None:
-        path = filedialog.askopenfilename(filetypes=[("Expandr library", "*.json"), ("All", "*.*")])
+        path = filedialog.askopenfilename(filetypes=[("TextExpander library", "*.json"), ("All", "*.*")])
         if not path:
             return
         choice = messagebox.askyesnocancel(

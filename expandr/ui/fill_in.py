@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import customtkinter as ctk
 
+from expandr.identity import APP_NAME
 from expandr.models import Library
 from expandr.parser import FormField, evaluate
 
@@ -17,7 +18,7 @@ class FillInDialog(ctk.CTkToplevel):
         clipboard: str,
     ):
         super().__init__(master)
-        self.title(title or "Expandr")
+        self.title(title or APP_NAME)
         self.attributes("-topmost", True)
         self.resizable(True, True)
         self.result: dict[str, str] | None = None

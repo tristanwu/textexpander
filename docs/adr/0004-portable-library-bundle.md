@@ -4,7 +4,7 @@
 Accepted
 
 ## Context
-There is no hosted database (ADR 0001). The user still needs to move folders, snippets, triggers, and disabled-app settings to another laptop after cloning the repo or copying `Expandr.exe`.
+There is no hosted database (ADR 0001). The user still needs to move folders, snippets, triggers, and disabled-app settings to another laptop after cloning the repo or copying `TextExpander.exe`.
 
 CSV (`folder,label,shortcut,content`) is useful for spreadsheets but drops trigger mode, enabled flags, and settings.
 
@@ -15,7 +15,7 @@ The primary transfer format is a tagged JSON bundle:
 { "format": "expandr-library", "version": 1, "library": { ... } }
 ```
 
-Import also accepts a raw `%AppData%\Expandr\library.json`. Replace swaps snippets on this PC. Merge updates by snippet id (or same shortcut in the same folder) and keeps snippets the file does not mention. Machine-only flags (`paused`, `seen_coach`, `start_with_windows`) are not overwritten on replace except that import always unpauses.
+Import also accepts a raw `%AppData%\TextExpander\library.json`. Replace swaps snippets on this PC. Merge updates by snippet id (or same shortcut in the same folder) and keeps snippets the file does not mention. Machine-only flags (`paused`, `seen_coach`, `start_with_windows`) are not overwritten on replace except that import always unpauses.
 
 CSV import/export stays as a secondary spreadsheet path.
 

@@ -28,3 +28,4 @@ What becomes easier, harder, or off-limits.
 - [0002 — Python desktop app packaged as one exe](0002-python-desktop-stack.md)
 - [0003 — Wait-free keyboard hook and clipboard insert](0003-hook-and-clipboard-insert.md)
 - [0004 — Portable library bundle instead of a hosted DB](0004-portable-library-bundle.md)
+- [0005 — Start menu shortcut instead of an MSI installer](0005-start-menu-shortcut.md)

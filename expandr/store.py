@@ -5,17 +5,23 @@ import os
 from pathlib import Path
 
 from expandr.defaults import default_library
+from expandr.identity import APP_NAME, LEGACY_APP_NAME
 from expandr.models import Library
 
 
-APP_NAME = "Expandr"
+def _appdata() -> Path:
+    root = os.environ.get("APPDATA") or str(Path.home() / "AppData" / "Roaming")
+    return Path(root)
 
 
 def data_dir() -> Path:
-    root = os.environ.get("APPDATA") or str(Path.home() / "AppData" / "Roaming")
-    path = Path(root) / APP_NAME
-    path.mkdir(parents=True, exist_ok=True)
-    return path
+    root = _appdata()
+    current = root / APP_NAME
+    legacy = root / LEGACY_APP_NAME
+    if not current.exists() and legacy.exists():
+        legacy.rename(current)
+    current.mkdir(parents=True, exist_ok=True)
+    return current
 
 
 def library_path() -> Path:

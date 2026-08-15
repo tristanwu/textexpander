@@ -4,6 +4,7 @@ from tkinter import messagebox
 
 import customtkinter as ctk
 
+from expandr.identity import APP_NAME
 from expandr.models import Folder, Library, Snippet, new_id, shortcut_is_armed
 from expandr.store import save_library
 
@@ -35,7 +36,7 @@ class MainWindow(ctk.CTkToplevel):
         conflict_provider=None,
     ):
         super().__init__(master)
-        self.title("Expandr")
+        self.title(APP_NAME)
         self.geometry("960x700")
         self.minsize(800, 560)
         self.library = library
@@ -262,7 +263,7 @@ class MainWindow(ctk.CTkToplevel):
             self.banner.configure(
                 text=(
                     "Text Blaze for Windows is also running. Both apps listen to every key, so they can "
-                    "block each other. Pause or quit the Text Blaze desktop app while you test Expandr. "
+                    f"block each other. Pause or quit the Text Blaze desktop app while you test {APP_NAME}. "
                     "The Chrome extension can stay."
                 )
             )

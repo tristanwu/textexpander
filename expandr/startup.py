@@ -3,13 +3,15 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from expandr.identity import APP_NAME, LEGACY_APP_NAME
+
 
 def startup_dir() -> Path:
     return Path.home() / "AppData" / "Roaming" / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup"
 
 
 def startup_bat() -> Path:
-    return startup_dir() / "Expandr.bat"
+    return startup_dir() / f"{APP_NAME}.bat"
 
 
 def is_frozen() -> bool:
@@ -25,6 +27,9 @@ def launch_command() -> str:
 
 def set_start_with_windows(enabled: bool) -> None:
     path = startup_bat()
+    legacy = startup_dir() / f"{LEGACY_APP_NAME}.bat"
+    if legacy.exists():
+        legacy.unlink()
     if not enabled:
         if path.exists():
             path.unlink()

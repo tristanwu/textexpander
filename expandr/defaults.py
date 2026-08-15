@@ -6,7 +6,7 @@ from expandr.models import Folder, Library, Settings, Snippet, TriggerMode, new_
 def _long_email() -> str:
     paragraph = (
         "This block is intentionally long. Text Blaze Free stops a single snippet "
-        "at 2,500 characters and stops you at 20 snippets. Expandr does not. "
+        "at 2,500 characters and stops you at 20 snippets. TextExpander does not. "
         "Use this for contracts, onboarding emails, runbooks, or anything you "
         "actually need to keep in one place.\n\n"
     )

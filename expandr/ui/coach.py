@@ -2,16 +2,18 @@ from __future__ import annotations
 
 import customtkinter as ctk
 
+from expandr.identity import APP_NAME
+
 
 class CoachDialog(ctk.CTkToplevel):
     def __init__(self, master, on_done):
         super().__init__(master)
-        self.title("Expandr")
+        self.title(APP_NAME)
         self.attributes("-topmost", True)
         self.geometry("420x260")
         self.resizable(False, False)
         self._on_done = on_done
-        ctk.CTkLabel(self, text="Expandr is running in the tray", font=ctk.CTkFont(size=16, weight="bold")).pack(
+        ctk.CTkLabel(self, text=f"{APP_NAME} is running in the tray", font=ctk.CTkFont(size=16, weight="bold")).pack(
             padx=20, pady=(20, 8), anchor="w"
         )
         ctk.CTkLabel(
