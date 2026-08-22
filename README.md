@@ -30,7 +30,7 @@ py -3 -m venv .venv
 2. Copy `dist\TextExpander.exe` to the new laptop.
 3. Double-click `TextExpander.exe`, then Settings → **Show in Start menu / search**.
 
-Optional: **Start with Windows**.
+Optional: **Start with Windows**. TextExpander registers itself in Windows startup apps, so Task Manager can enable or disable it under the name **TextExpander**.
 
 ## How to use
 
@@ -39,6 +39,7 @@ Optional: **Start with Windows**.
 - **Pause:** `Ctrl+Shift+P`
 - **Tray icon:** open the library or quit. The library does not open on launch.
 - **Move to another PC:** Settings → **Export library**. Copy the JSON file to the new laptop, run TextExpander, Settings → **Import library**. Choose replace on a fresh install, or merge to keep snippets already on that PC. A raw `%AppData%\TextExpander\library.json` also imports.
+- **Repository backups:** Settings → **Create backup** writes a timestamped JSON file under `backups/` and commits only that backup. Push the commit when you want it available to clone or pull on another PC, then use **Restore from backup** there.
 - **Settings:** disabled apps, folder trigger, CSV import/export for spreadsheets (`folder,label,shortcut,content`).
 
 ### Commands (Text Blaze-style)

@@ -5,6 +5,7 @@ from tkinter import filedialog, messagebox
 
 import customtkinter as ctk
 
+from expandr.backup import BackupError, backups_dir, create_backup
 from expandr.csv_io import export_csv, import_csv
 from expandr.models import Library, TriggerMode
 from expandr.install import install_start_menu, is_on_start_menu, uninstall_start_menu
@@ -25,7 +26,7 @@ class SettingsWindow(ctk.CTkToplevel):
     def __init__(self, master, library: Library, on_change):
         super().__init__(master)
         self.title("Settings")
-        self.geometry("520x620")
+        self.geometry("520x690")
         self.library = library
         self.on_change = on_change
 
@@ -61,6 +62,14 @@ class SettingsWindow(ctk.CTkToplevel):
         files.pack(fill="x", padx=16)
         ctk.CTkButton(files, text="Export library", width=130, command=self._export_bundle).pack(side="left")
         ctk.CTkButton(files, text="Import library", width=130, command=self._import_bundle).pack(side="left", padx=8)
+
+        ctk.CTkLabel(self, text="Repository backups", text_color="gray").pack(anchor="w", padx=16, pady=(8, 4))
+        backup_row = ctk.CTkFrame(self, fg_color="transparent")
+        backup_row.pack(fill="x", padx=16)
+        ctk.CTkButton(backup_row, text="Create backup", width=130, command=self._create_backup).pack(side="left")
+        ctk.CTkButton(backup_row, text="Restore from backup", width=150, command=self._restore_backup).pack(
+            side="left", padx=8
+        )
 
         csv_row = ctk.CTkFrame(self, fg_color="transparent")
         csv_row.pack(fill="x", padx=16, pady=(8, 16))
@@ -148,6 +157,49 @@ class SettingsWindow(ctk.CTkToplevel):
         self._render_folders()
         action = "Replaced" if result.replaced else "Merged"
         messagebox.showinfo("Import", f"{action} library · {result.snippets} snippets in {result.folders} folders.")
+
+    def _create_backup(self) -> None:
+        try:
+            result = create_backup(self.library)
+        except BackupError as exc:
+            messagebox.showerror("Create backup", str(exc))
+            return
+        messagebox.showinfo(
+            "Create backup",
+            f"Saved {result.path.name} and committed it as {result.commit}.",
+        )
+
+    def _restore_backup(self) -> None:
+        try:
+            folder = backups_dir()
+        except BackupError as exc:
+            messagebox.showerror("Restore from backup", str(exc))
+            return
+        path = filedialog.askopenfilename(
+            title="Restore from backup",
+            initialdir=folder,
+            filetypes=[("TextExpander backup", "*.json"), ("All", "*.*")],
+        )
+        if not path:
+            return
+        if not messagebox.askyesno(
+            "Restore from backup",
+            "Replace the snippets on this PC with the selected backup?\n\n"
+            "Startup and other machine-only settings will stay unchanged.",
+        ):
+            return
+        try:
+            result = import_bundle(self.library, Path(path), merge=False)
+        except TransferError as exc:
+            messagebox.showerror("Restore from backup", str(exc))
+            return
+        save_library(self.library)
+        self.on_change()
+        self._render_folders()
+        messagebox.showinfo(
+            "Restore from backup",
+            f"Restored {result.snippets} snippets in {result.folders} folders.",
+        )
 
     def _import_csv(self) -> None:
         path = filedialog.askopenfilename(filetypes=[("CSV", "*.csv"), ("All", "*.*")])

@@ -11,6 +11,6 @@ def test_start_menu_shortcut_is_under_programs():
 
 def test_shortcut_spec_points_at_a_real_launcher():
     spec = shortcut_spec()
-    assert Path(spec["target"]).exists()
-    assert spec["name"] == "TextExpander"
-    assert spec["working_directory"]
+    assert Path(spec.target).exists()
+    assert spec.path == start_menu_shortcut()
+    assert spec.working_directory

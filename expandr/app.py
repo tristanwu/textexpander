@@ -14,7 +14,7 @@ from expandr.icon import make_icon
 from expandr.insert import insert_expansion
 from expandr.parser import collect_fields, evaluate, parse
 from expandr.processutil import become_only_instance, text_blaze_running
-from expandr.startup import set_start_with_windows
+from expandr.startup import ensure_startup_registration
 from expandr.store import data_dir, load_library, save_library
 from expandr.ui.coach import CoachDialog
 from expandr.ui.fill_in import ask_fields
@@ -33,8 +33,10 @@ class ExpandrApp:
         self.root.withdraw()
         self.root.title(APP_NAME)
         self.library = load_library()
-        if self.library.settings.start_with_windows:
-            set_start_with_windows(True)
+        startup_enabled = ensure_startup_registration(self.library.settings.start_with_windows)
+        if startup_enabled != self.library.settings.start_with_windows:
+            self.library.settings.start_with_windows = startup_enabled
+            save_library(self.library)
         self.events: queue.Queue = queue.Queue()
         self.window: MainWindow | None = None
         self.settings: SettingsWindow | None = None
