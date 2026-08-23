@@ -61,6 +61,10 @@ def test_skip_list_writes_skip_not_text(tmp_path, monkeypatch):
     recorder.stop()
     events = load_events(recorder.meta)
     assert events[0]["kind"] == "skip"
+    assert events[0]["app"] == "keepass.exe"
+    assert "vk" not in events[0]
+    assert "mods" not in events[0]
+    assert "char" not in events[0]
     assert load_chunks(recorder.meta) == []
 
 

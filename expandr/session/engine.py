@@ -309,10 +309,11 @@ class SessionRecorder:
             "session_id": self.meta.id,
             "t": item.t,
             "app": app,
-            "vk": item.vk,
-            "mods": item.mods,
             "kind": item.kind,
         }
+        if item.kind != "skip":
+            event["vk"] = item.vk
+            event["mods"] = item.mods
         if item.kind == "char":
             classified = classify_key(item.vk, item.mods)
             event["char"] = classified[1] if classified else None

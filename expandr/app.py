@@ -36,7 +36,10 @@ class ExpandrApp:
         self.root = ctk.CTk()
         self.root.withdraw()
         self.root.title(APP_NAME)
-        self.library = load_library()
+        loaded = load_library()
+        self.library = loaded.library
+        if loaded.quarantined is not None:
+            self.root.after(100, lambda path=loaded.quarantined: self._warn_recovered_library(path))
         startup_enabled = ensure_startup_registration(self.library.settings.start_with_windows)
         if startup_enabled != self.library.settings.start_with_windows:
             self.library.settings.start_with_windows = startup_enabled
@@ -76,6 +79,16 @@ class ExpandrApp:
         name = foreground_process_name()
         blocked = {item.casefold() for item in self.library.settings.disabled_apps}
         return name in blocked
+
+    def _warn_recovered_library(self, quarantined: Path) -> None:
+        from tkinter import messagebox
+
+        messagebox.showwarning(
+            APP_NAME,
+            "The snippet library could not be read, so it was moved aside and a new library was created.\n\n"
+            f"Your previous file is here:\n{quarantined}",
+        )
+
 
     def _poll(self) -> None:
         try:
