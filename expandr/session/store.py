@@ -6,6 +6,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from expandr.session.models import SCHEMA_VERSION, SessionMeta
+from expandr.session.filters import chunk_has_content
 from expandr.store import data_dir
 
 ROTATE_BYTES = 8 * 1024 * 1024
@@ -239,6 +240,8 @@ def write_transcript(meta: SessionMeta) -> Path:
     if meta.goal:
         lines.extend([f"Goal: {meta.goal}", ""])
     for chunk in load_chunks(meta):
+        if not chunk_has_content(chunk):
+            continue
         header = f"## {chunk.get('app') or 'unknown'} · {chunk.get('t_start') or ''}"
         lines.append(header)
         lines.append("")

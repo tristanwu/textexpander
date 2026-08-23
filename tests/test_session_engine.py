@@ -68,6 +68,18 @@ def test_skip_list_writes_skip_not_text(tmp_path, monkeypatch):
     assert load_chunks(recorder.meta) == []
 
 
+def test_enter_without_text_still_writes_an_empty_chunk(tmp_path, monkeypatch):
+    recorder = _recorder(tmp_path, monkeypatch)
+    recorder.start(run_writer=False)
+    recorder.enqueue(VK_RETURN, 0, 2)
+    recorder.stop()
+    assert load_events(recorder.meta)[-1]["kind"] == "enter"
+    chunks = load_chunks(recorder.meta)
+    assert len(chunks) == 1
+    assert chunks[0]["app"] == "chrome.exe"
+    assert chunks[0]["text"] == ""
+
+
 def test_ctrl_v_is_paste_marker_without_clipboard_body(tmp_path, monkeypatch):
     recorder = _recorder(tmp_path, monkeypatch)
     recorder.start(run_writer=False)

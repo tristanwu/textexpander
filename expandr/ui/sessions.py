@@ -15,6 +15,7 @@ from expandr.session.store import (
     sessions_dir,
     write_transcript,
 )
+from expandr.session.filters import chunk_has_content
 from expandr.store import save_library
 
 
@@ -164,6 +165,8 @@ class SessionsWindow(ctk.CTkToplevel):
             chunks = [chunk for chunk in chunks if chunk.get("app") == self._filter_app]
         lines = []
         for chunk in chunks:
+            if not chunk_has_content(chunk):
+                continue
             lines.append(f"{chunk.get('app')} · {chunk.get('t_start')}")
             lines.append(chunk.get("text") or "")
             lines.append("")

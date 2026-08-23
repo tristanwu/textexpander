@@ -13,7 +13,7 @@ Recording is a side channel on the existing hook: `on_key` enqueues `vk`, `mods`
 
 Token-shaped secrets (`sk-…`, `ghp_…`, `AKIA…`) are masked when projecting chunks and `transcript.md`. They are not stripped from `events.jsonl`, which keeps the raw character trail so chunks can be rebuilt.
 
-Skip-list apps are left out of the typing record: no chunks, and a `skip` event may note the app and time without `vk`, `mods`, or `char`.
+Skip-list apps are left out of the typing record: no chunks, and a `skip` event may note the app and time without `vk`, `mods`, or `char`. The skip list is only what the user edits. Recording stays thorough otherwise, including empty app-switch/enter flushes in `chunks.jsonl`. The Sessions window and `transcript.md` omit empty chunks; they do not rewrite the files.
 
 `shutdown()` stops the session (drain, flush, join) before `engine.stop()`. An orphan session is repaired to `ended_reason: quit` and does not resume.
 

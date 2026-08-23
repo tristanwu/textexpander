@@ -1,4 +1,4 @@
-from expandr.session.filters import default_skip_apps, mask_secrets, should_record
+from expandr.session.filters import chunk_has_content, default_skip_apps, mask_secrets, should_record
 
 
 def test_skip_list_blocks_password_managers():
@@ -31,3 +31,11 @@ def test_mask_secrets_hides_token_shapes():
     assert "ghp_" not in masked
     assert "AKIA" not in masked
     assert masked.count("[hidden]") == 3
+
+
+def test_chunk_has_content_ignores_blank_text():
+    assert chunk_has_content({"text": "hello"}) is True
+    assert chunk_has_content({"text": "[paste]"}) is True
+    assert chunk_has_content({"text": ""}) is False
+    assert chunk_has_content({"text": "   \n"}) is False
+

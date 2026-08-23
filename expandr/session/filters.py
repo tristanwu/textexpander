@@ -20,6 +20,10 @@ def default_skip_apps() -> list[str]:
     return list(DEFAULT_SKIP_APPS)
 
 
+def chunk_has_content(chunk: dict) -> bool:
+    return bool((chunk.get("text") or "").strip())
+
+
 def should_record(app: str, skip_apps: list[str], *, live: bool, paused: bool) -> bool:
     if not live or paused:
         return False

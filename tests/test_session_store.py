@@ -101,6 +101,37 @@ def test_chunks_and_transcript_are_chronological(tmp_path, monkeypatch):
     assert text.index("fix this") < text.index("search traceback")
 
 
+def test_transcript_omits_empty_chunks(tmp_path, monkeypatch):
+    monkeypatch.setenv("APPDATA", str(tmp_path))
+    meta = start_session(title="Noise")
+    append_chunk(
+        meta,
+        {
+            "chunk_id": "empty",
+            "app": "chrome.exe",
+            "t_start": "2026-08-23T03:47:49Z",
+            "t_end": "2026-08-23T03:47:49Z",
+            "text": "",
+            "flush_reason": "enter",
+        },
+    )
+    append_chunk(
+        meta,
+        {
+            "chunk_id": "kept",
+            "app": "cursor.exe",
+            "t_start": "2026-08-23T03:48:00Z",
+            "t_end": "2026-08-23T03:48:01Z",
+            "text": "next question:",
+            "flush_reason": "enter",
+        },
+    )
+    text = write_transcript(meta).read_text(encoding="utf-8")
+    assert "next question:" in text
+    assert "chrome.exe" not in text
+    assert text.count("##") == 1
+
+
 def test_delete_session_removes_folder_not_library(tmp_path, monkeypatch):
     monkeypatch.setenv("APPDATA", str(tmp_path))
     library = tmp_path / "TextExpander" / "library.json"
