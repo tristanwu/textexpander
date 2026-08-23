@@ -21,6 +21,9 @@ Put tests next to the behavior, not the UI:
 | Start menu install | `tests/test_install.py` |
 | Windows startup registration | `tests/test_startup.py` |
 | Repository backups | `tests/test_backup.py` |
+| Session filters | `tests/test_session_filters.py` |
+| Session store | `tests/test_session_store.py` |
+| Session writer | `tests/test_session_engine.py` |
 
 Do not install a real keyboard hook in tests. Drive `KeyboardEngine._handle_key` or pure functions.
 

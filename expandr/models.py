@@ -5,6 +5,8 @@ from enum import Enum
 from typing import Literal
 from uuid import uuid4
 
+from expandr.session.filters import default_skip_apps
+
 
 class TriggerMode(str, Enum):
     WORD_START = "word_start"
@@ -87,6 +89,8 @@ class Settings:
     start_with_windows: bool = False
     seen_coach: bool = False
     disabled_apps: list[str] = field(default_factory=list)
+    session_skip_apps: list[str] = field(default_factory=default_skip_apps)
+    seen_session_consent: bool = False
 
     def to_dict(self) -> dict:
         return {
@@ -96,10 +100,16 @@ class Settings:
             "start_with_windows": self.start_with_windows,
             "seen_coach": self.seen_coach,
             "disabled_apps": list(self.disabled_apps),
+            "session_skip_apps": list(self.session_skip_apps),
+            "seen_session_consent": self.seen_session_consent,
         }
 
     @classmethod
     def from_dict(cls, data: dict) -> Settings:
+        if "session_skip_apps" in data:
+            skip = list(data.get("session_skip_apps") or [])
+        else:
+            skip = default_skip_apps()
         return cls(
             search_hotkey=data.get("search_hotkey") or "ctrl+shift+/",
             pause_hotkey=data.get("pause_hotkey") or "ctrl+shift+p",
@@ -107,6 +117,8 @@ class Settings:
             start_with_windows=bool(data.get("start_with_windows", False)),
             seen_coach=bool(data.get("seen_coach", False)),
             disabled_apps=list(data.get("disabled_apps") or []),
+            session_skip_apps=skip,
+            seen_session_consent=bool(data.get("seen_session_consent", False)),
         )
 
 

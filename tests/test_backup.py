@@ -75,3 +75,17 @@ def test_list_backups_returns_newest_json_first(tmp_path):
 def test_find_repo_root_reports_non_repo(tmp_path):
     with pytest.raises(BackupError, match="Git repository"):
         find_repo_root(tmp_path)
+
+
+def test_create_backup_does_not_walk_appdata_sessions(tmp_path, monkeypatch):
+    monkeypatch.setenv("APPDATA", str(tmp_path / "app"))
+    from expandr.session.store import start_session
+
+    start_session(title="Secret trail")
+    repo = _repo(tmp_path)
+    result = create_backup(_library(), repo=repo, now=datetime(2026, 8, 22, 18, 0, 0))
+    names = _git(repo, "show", "--format=", "--name-only", "HEAD")
+    payload = result.path.read_text(encoding="utf-8")
+    assert "sessions" not in names
+    assert "Secret trail" not in payload
+    assert "events.jsonl" not in payload

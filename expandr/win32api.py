@@ -228,8 +228,7 @@ def focus_hwnd(hwnd: int) -> None:
             user32.AttachThreadInput(current_tid, target_tid, False)
 
 
-def foreground_process_name() -> str:
-    hwnd = user32.GetForegroundWindow()
+def process_name(hwnd: int) -> str:
     if not hwnd:
         return ""
     pid = wintypes.DWORD()
@@ -245,6 +244,10 @@ def foreground_process_name() -> str:
     finally:
         kernel32.CloseHandle(handle)
     return ""
+
+
+def foreground_process_name() -> str:
+    return process_name(int(user32.GetForegroundWindow() or 0))
 
 
 def _open_clipboard(retries: int = 8) -> bool:

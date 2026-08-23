@@ -13,6 +13,8 @@ VK_A = 0x41
 VK_Z = 0x5A
 VK_OEM_2 = 0xBF
 VK_P = 0x50
+VK_V = 0x56
+VK_INSERT = 0x2D
 
 MOD_SHIFT = 1
 MOD_CTRL = 2

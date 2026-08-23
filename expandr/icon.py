@@ -6,7 +6,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 
-def make_icon(size: int = 64) -> Image.Image:
+def make_icon(size: int = 64, recording: bool = False) -> Image.Image:
     image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
     margin = max(2, size // 16)
@@ -26,6 +26,10 @@ def make_icon(size: int = 64) -> Image.Image:
         ],
         fill=(255, 255, 255, 255),
     )
+    if recording:
+        pad = max(2, size // 16)
+        r = max(4, size // 6)
+        draw.ellipse((size - pad - r * 2, pad, size - pad, pad + r * 2), fill=(220, 38, 38, 255))
     return image
 
 

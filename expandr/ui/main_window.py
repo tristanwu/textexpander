@@ -32,8 +32,10 @@ class MainWindow(ctk.CTkToplevel):
         on_change,
         on_settings,
         on_quit=None,
+        on_sessions=None,
         status_provider=None,
         conflict_provider=None,
+        session_status_provider=None,
     ):
         super().__init__(master)
         self.title(APP_NAME)
@@ -43,8 +45,10 @@ class MainWindow(ctk.CTkToplevel):
         self.on_change = on_change
         self.on_settings = on_settings
         self.on_quit = on_quit
+        self.on_sessions = on_sessions
         self.status_provider = status_provider
         self.conflict_provider = conflict_provider
+        self.session_status_provider = session_status_provider
         self._selected: Snippet | None = None
         self._folder: Folder | None = None
         self._loading = False
@@ -67,6 +71,8 @@ class MainWindow(ctk.CTkToplevel):
         if self.on_quit:
             ctk.CTkButton(header, text="Quit", width=64, fg_color="gray", command=self.on_quit).pack(side="right")
         ctk.CTkButton(header, text="Settings", width=80, command=self.on_settings).pack(side="right", padx=6)
+        if self.on_sessions:
+            ctk.CTkButton(header, text="Sessions", width=80, command=self.on_sessions).pack(side="right")
 
         self.filter_entry = ctk.CTkEntry(sidebar, placeholder_text="Filter")
         self.filter_entry.grid(row=1, column=0, sticky="ew", padx=12, pady=(0, 8))
@@ -259,14 +265,19 @@ class MainWindow(ctk.CTkToplevel):
             if inserted:
                 parts.append(inserted)
         self.status.configure(text=" · ".join(parts))
+        parts = []
+        if self.session_status_provider:
+            session_line = self.session_status_provider()
+            if session_line:
+                parts.append(session_line)
         if self.conflict_provider and self.conflict_provider():
-            self.banner.configure(
-                text=(
-                    "Text Blaze for Windows is also running. Both apps listen to every key, so they can "
-                    f"block each other. Pause or quit the Text Blaze desktop app while you test {APP_NAME}. "
-                    "The Chrome extension can stay."
-                )
+            parts.append(
+                "Text Blaze for Windows is also running. Both apps listen to every key, so they can "
+                f"block each other. Pause or quit the Text Blaze desktop app while you test {APP_NAME}. "
+                "The Chrome extension can stay."
             )
+        if parts:
+            self.banner.configure(text="\n".join(parts))
             self.banner.grid()
         else:
             self.banner.configure(text="")

@@ -59,7 +59,13 @@ def test_read_bundle_rejects_garbage(tmp_path):
 def test_import_replace_swaps_snippets_and_unpauses(tmp_path):
     dest = Library(
         folders=[Folder(id="old", name="Old", snippets=[Snippet(id="x", label="X", shortcut="/x", content="x")])],
-        settings=Settings(paused=True, start_with_windows=False, seen_coach=True),
+        settings=Settings(
+            paused=True,
+            start_with_windows=False,
+            seen_coach=True,
+            session_skip_apps=["keepass.exe"],
+            seen_session_consent=True,
+        ),
     )
     path = tmp_path / "bundle.json"
     export_bundle(_library(), path)
@@ -71,6 +77,8 @@ def test_import_replace_swaps_snippets_and_unpauses(tmp_path):
     assert dest.settings.paused is False
     assert dest.settings.seen_coach is True
     assert dest.settings.disabled_apps == ["game.exe"]
+    assert dest.settings.session_skip_apps == ["keepass.exe"]
+    assert dest.settings.seen_session_consent is True
 
 
 def test_import_merge_adds_new_and_updates_same_id(tmp_path):

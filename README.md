@@ -36,7 +36,8 @@ Optional: **Start with Windows**. TextExpander registers itself in Windows start
 
 - **Type a shortcut** at the start of a word (`/ty`, `/sig`, `/date`, `/meet`, `/long`). Shortcuts need 2+ characters.
 - **Search:** `Ctrl+Shift+/`
-- **Pause:** `Ctrl+Shift+P`
+- **Pause expansion:** `Ctrl+Shift+P` (does not start or stop a session)
+- **Sessions:** tray → **Start session** saves what you type, tagged by app, until **Stop session**. Lives in `%AppData%\TextExpander\sessions`, not in `library.json` or Export library. Quit ends the session only; the expander stays the always-on app.
 - **Tray icon:** open the library or quit. The library does not open on launch.
 - **Move to another PC:** Settings → **Export library**. Copy the JSON file to the new laptop, run TextExpander, Settings → **Import library**. Choose replace on a fresh install, or merge to keep snippets already on that PC. A raw `%AppData%\TextExpander\library.json` also imports.
 - **Repository backups:** Settings → **Create backup** writes a timestamped JSON file under `backups/` and commits only that backup. Push the commit when you want it available to clone or pull on another PC, then use **Restore from backup** there.

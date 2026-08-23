@@ -89,13 +89,14 @@ def _mods_now() -> int:
 
 
 class KeyboardEngine:
-    def __init__(self, library_provider, on_match, on_search, on_pause, is_paused, is_app_disabled):
+    def __init__(self, library_provider, on_match, on_search, on_pause, is_paused, is_app_disabled, on_key=None):
         self._library_provider = library_provider
         self._on_match = on_match
         self._on_search = on_search
         self._on_pause = on_pause
         self._is_paused = is_paused
         self._is_app_disabled = is_app_disabled
+        self._on_key = on_key
         self._buffer = ""
         self._hook = None
         self._thread: threading.Thread | None = None
@@ -197,6 +198,12 @@ class KeyboardEngine:
             self.clear()
             self._on_search()
             return
+        if self._on_key:
+            try:
+                hwnd = int(user32.GetForegroundWindow() or 0)
+                self._on_key(vk, mods, hwnd)
+            except Exception:
+                pass
         if self.busy or self._is_paused():
             return
         if mods & (MOD_CTRL | MOD_ALT):

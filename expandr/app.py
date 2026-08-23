@@ -14,15 +14,19 @@ from expandr.icon import make_icon
 from expandr.insert import insert_expansion
 from expandr.parser import collect_fields, evaluate, parse
 from expandr.processutil import become_only_instance, text_blaze_running
+from expandr.session.engine import SessionRecorder
+from expandr.session.store import repair_orphans
 from expandr.startup import ensure_startup_registration
 from expandr.store import data_dir, load_library, save_library
 from expandr.ui.coach import CoachDialog
 from expandr.ui.fill_in import ask_fields
 from expandr.ui.main_window import MainWindow
 from expandr.ui.search import ask_snippet
+from expandr.ui.session_consent import ask_session_consent
+from expandr.ui.sessions import SessionsWindow
 from expandr.ui.settings import SettingsWindow
 from expandr.identity import APP_NAME
-from expandr.win32api import foreground_hwnd, foreground_process_name, get_clipboard_text
+from expandr.win32api import foreground_hwnd, foreground_process_name, get_clipboard_text, process_name
 
 
 class ExpandrApp:
@@ -40,8 +44,15 @@ class ExpandrApp:
         self.events: queue.Queue = queue.Queue()
         self.window: MainWindow | None = None
         self.settings: SettingsWindow | None = None
+        self.sessions_window: SessionsWindow | None = None
         self.tray = None
         self._dead = False
+        repair_orphans()
+        self.recorder = SessionRecorder(
+            skip_provider=lambda: self.library.settings.session_skip_apps,
+            resolve_app=lambda hwnd: process_name(hwnd) or foreground_process_name() or "unknown.exe",
+            on_error=lambda exc: self.events.put(("session_error", exc)),
+        )
         self.engine = KeyboardEngine(
             library_provider=lambda: self.library,
             on_match=lambda event: self.events.put(("match", event)),
@@ -49,6 +60,7 @@ class ExpandrApp:
             on_pause=lambda: self.events.put(("toggle", None)),
             is_paused=lambda: self.library.settings.paused,
             is_app_disabled=self._app_disabled,
+            on_key=self.recorder.enqueue,
         )
         self.root.protocol("WM_DELETE_WINDOW", self._hide_root)
         self.root.after(40, self._poll)
@@ -82,6 +94,16 @@ class ExpandrApp:
                     self.show_library()
                 elif kind == "toggle":
                     self._toggle_pause()
+                elif kind == "session_start":
+                    self._start_session()
+                elif kind == "session_stop":
+                    self._stop_session()
+                elif kind == "session_pause":
+                    self._toggle_session_pause()
+                elif kind == "session_open":
+                    self.show_sessions()
+                elif kind == "session_error":
+                    self._session_failed(payload)
         except queue.Empty:
             pass
         self.root.after(40, self._poll)
@@ -107,6 +129,8 @@ class ExpandrApp:
             result = evaluate(snippet.content, answers, library=self.library, clipboard=clipboard)
             how = insert_expansion(hwnd or foreground_hwnd(), delete_count, result.text + suffix, result.cursor)
             self.engine.last_insert = how
+            if self.recorder.live:
+                self.recorder.note_expand(snippet.shortcut)
         except Exception as exc:
             self.engine.last_insert = "failed"
             try:
@@ -135,8 +159,10 @@ class ExpandrApp:
                 on_change=self._library_changed,
                 on_settings=self.show_settings,
                 on_quit=lambda: self.events.put(("quit", None)),
+                on_sessions=self.show_sessions,
                 status_provider=self.engine.status,
                 conflict_provider=text_blaze_running,
+                session_status_provider=self._session_banner,
             )
         self.window.show()
 
@@ -173,24 +199,126 @@ class ExpandrApp:
 
     def _tray_menu(self):
         paused = self.library.settings.paused
-        return pystray.Menu(
+        live = self.recorder.live
+        session_paused = self.recorder.paused
+        items = [
             pystray.MenuItem("Open library", lambda: self.events.put(("open", None)), default=True),
-            pystray.MenuItem(
-                "Resume expansion" if paused else "Pause expansion",
-                lambda: self.events.put(("toggle", None)),
-            ),
-            pystray.MenuItem("Quit", lambda: self.events.put(("quit", None))),
+            pystray.Menu.SEPARATOR,
+        ]
+        if not live:
+            items.append(pystray.MenuItem("Start session", lambda: self.events.put(("session_start", None))))
+        else:
+            items.append(pystray.MenuItem("Stop session", lambda: self.events.put(("session_stop", None))))
+            items.append(
+                pystray.MenuItem(
+                    "Resume session" if session_paused else "Pause session",
+                    lambda: self.events.put(("session_pause", None)),
+                )
+            )
+        items.extend(
+            [
+                pystray.MenuItem("Open sessions", lambda: self.events.put(("session_open", None))),
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem(
+                    "Resume expansion" if paused else "Pause expansion",
+                    lambda: self.events.put(("toggle", None)),
+                ),
+                pystray.MenuItem("Quit", lambda: self.events.put(("quit", None))),
+            ]
         )
+        return pystray.Menu(*items)
+
+    def _tray_title(self) -> str:
+        parts = [APP_NAME]
+        if self.recorder.live:
+            minutes = 0
+            if self.recorder.meta and self.recorder.meta.started_at:
+                try:
+                    from datetime import datetime, timezone
+
+                    started = datetime.fromisoformat(self.recorder.meta.started_at.replace("Z", "+00:00"))
+                    minutes = int((datetime.now(timezone.utc) - started).total_seconds() // 60)
+                except ValueError:
+                    minutes = 0
+            state = "session paused" if self.recorder.paused else "session on"
+            parts.append(f"{state} · {minutes} min")
+        if self.library.settings.paused:
+            parts.append("expansion paused")
+        return " · ".join(parts) if len(parts) > 1 else APP_NAME
+
+    def _session_banner(self) -> str:
+        if not self.recorder.live:
+            return ""
+        if self.recorder.paused:
+            return "Session paused · nothing new is being written"
+        return "SESSION ON · saving what you type"
 
     def _refresh_tray(self) -> None:
         if self.tray:
             self.tray.menu = self._tray_menu()
-            self.tray.title = f"{APP_NAME} (paused)" if self.library.settings.paused else APP_NAME
+            self.tray.title = self._tray_title()
+            try:
+                self.tray.icon = make_icon(64, recording=self.recorder.live and not self.recorder.paused)
+            except Exception:
+                pass
+
+    def show_sessions(self) -> None:
+        if self.sessions_window is None or not self.sessions_window.winfo_exists():
+            self.sessions_window = SessionsWindow(
+                self.root,
+                self.library,
+                self.recorder,
+                on_start=self._start_session,
+                on_stop=self._stop_session,
+                on_change=self._library_changed,
+            )
+        self.sessions_window.show()
+
+    def _start_session(self) -> None:
+        if self.recorder.live:
+            return
+        if not self.library.settings.seen_session_consent:
+            if not ask_session_consent(self.root):
+                return
+            self.library.settings.seen_session_consent = True
+            save_library(self.library)
+        self.recorder.start()
+        self._refresh_tray()
+        if self.sessions_window is not None and self.sessions_window.winfo_exists():
+            self.sessions_window.refresh()
+
+    def _stop_session(self) -> None:
+        if not self.recorder.live:
+            return
+        self.recorder.stop()
+        self._refresh_tray()
+        if self.sessions_window is not None and self.sessions_window.winfo_exists():
+            self.sessions_window.refresh()
+
+    def _toggle_session_pause(self) -> None:
+        if not self.recorder.live:
+            return
+        if self.recorder.paused:
+            self.recorder.resume()
+        else:
+            self.recorder.pause()
+        self._refresh_tray()
+
+    def _session_failed(self, exc) -> None:
+        from tkinter import messagebox
+
+        self._refresh_tray()
+        messagebox.showerror("Sessions", f"Could not save the session.\n\n{exc}")
 
     def shutdown(self) -> None:
         if self._dead:
             return
         self._dead = True
+        try:
+            if self.recorder.live or self.recorder.meta:
+                self.recorder.stop(reason="quit")
+        except Exception:
+            pass
         try:
             self.engine.stop()
         except Exception:

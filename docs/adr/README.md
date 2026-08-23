@@ -31,3 +31,4 @@ What becomes easier, harder, or off-limits.
 - [0005 — Start menu shortcut instead of an MSI installer](0005-start-menu-shortcut.md)
 - [0006 — Git-backed library backups](0006-git-backed-library-backups.md)
 - [0007 — Task Manager startup registration](0007-task-manager-startup-registration.md)
+- [0008 — Local typing sessions beside the expander](0008-local-typing-sessions.md)

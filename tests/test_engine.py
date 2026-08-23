@@ -42,3 +42,33 @@ def test_busy_does_not_match():
     engine._handle_key(0x54, 0)
     engine._handle_key(0x59, 0)
     assert hits == []
+
+
+def test_on_key_fires_when_paused_and_still_matches_when_not():
+    keys: list[tuple[int, int, int]] = []
+    hits: list[MatchEvent] = []
+    library = _library()
+    paused = False
+
+    def is_paused():
+        return paused
+
+    engine = KeyboardEngine(
+        library_provider=lambda: library,
+        on_match=hits.append,
+        on_search=lambda: None,
+        on_pause=lambda: None,
+        is_paused=is_paused,
+        is_app_disabled=lambda: False,
+        on_key=lambda vk, mods, hwnd: keys.append((vk, mods, hwnd)),
+    )
+    paused = True
+    engine._handle_key(0x41, 0)
+    assert keys and keys[0][0] == 0x41
+    assert hits == []
+    paused = False
+    engine._handle_key(0xBF, 0)
+    engine._handle_key(0x54, 0)
+    engine._handle_key(0x59, 0)
+    assert hits and hits[0].snippet.shortcut == "/ty"
+    assert len(keys) == 4

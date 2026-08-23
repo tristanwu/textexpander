@@ -9,6 +9,7 @@ from expandr.backup import BackupError, backups_dir, create_backup
 from expandr.csv_io import export_csv, import_csv
 from expandr.models import Library, TriggerMode
 from expandr.install import install_start_menu, is_on_start_menu, uninstall_start_menu
+from expandr.session.store import sessions_dir
 from expandr.startup import set_start_with_windows
 from expandr.store import data_dir, save_library
 from expandr.transfer import TransferError, import_bundle, export_bundle
@@ -32,46 +33,66 @@ class SettingsWindow(ctk.CTkToplevel):
 
         pad = {"padx": 16, "pady": 6}
         ctk.CTkLabel(self, text="Settings", font=ctk.CTkFont(size=18, weight="bold")).pack(anchor="w", padx=16, pady=(16, 8))
+        body = ctk.CTkScrollableFrame(self)
+        body.pack(fill="both", expand=True, padx=0, pady=0)
 
         self.startup_var = ctk.BooleanVar(value=library.settings.start_with_windows)
-        ctk.CTkSwitch(self, text="Start with Windows", variable=self.startup_var, command=self._toggle_startup).pack(
+        ctk.CTkSwitch(body, text="Start with Windows", variable=self.startup_var, command=self._toggle_startup).pack(
             anchor="w", **pad
         )
         self.start_menu_var = ctk.BooleanVar(value=is_on_start_menu())
         ctk.CTkSwitch(
-            self, text="Show in Start menu / search", variable=self.start_menu_var, command=self._toggle_start_menu
+            body, text="Show in Start menu / search", variable=self.start_menu_var, command=self._toggle_start_menu
         ).pack(anchor="w", **pad)
 
-        ctk.CTkLabel(self, text="Ctrl+Shift+/  search     Ctrl+Shift+P  pause", text_color="gray").pack(
+        ctk.CTkLabel(body, text="Ctrl+Shift+/  search     Ctrl+Shift+P  pause", text_color="gray").pack(
             anchor="w", padx=16
         )
 
-        ctk.CTkLabel(self, text="Do not expand in these apps (one exe name per line)").pack(anchor="w", padx=16, pady=(12, 4))
-        self.apps = ctk.CTkTextbox(self, height=90)
+        ctk.CTkLabel(body, text="Expansion", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=16, pady=(16, 4))
+        ctk.CTkLabel(body, text="Do not expand in these apps (one exe name per line)").pack(anchor="w", padx=16, pady=(4, 4))
+        self.apps = ctk.CTkTextbox(body, height=90)
         self.apps.pack(fill="x", padx=16)
         self.apps.insert("1.0", "\n".join(library.settings.disabled_apps))
         self.apps.bind("<KeyRelease>", lambda _e: self._save_apps())
 
-        ctk.CTkLabel(self, text="Folder trigger").pack(anchor="w", padx=16, pady=(12, 4))
-        self.folder_frame = ctk.CTkScrollableFrame(self, height=140)
-        self.folder_frame.pack(fill="both", expand=True, padx=16)
+        ctk.CTkLabel(body, text="Sessions", font=ctk.CTkFont(weight="bold")).pack(anchor="w", padx=16, pady=(16, 4))
+        ctk.CTkLabel(body, text="Skip these apps while a session is on (one exe name per line)").pack(
+            anchor="w", padx=16, pady=(4, 4)
+        )
+        ctk.CTkLabel(
+            body,
+            text='Different from “Do not expand.” Sessions are optional and are not included in Export library.',
+            text_color="gray",
+        ).pack(anchor="w", padx=16)
+        self.session_apps = ctk.CTkTextbox(body, height=90)
+        self.session_apps.pack(fill="x", padx=16)
+        self.session_apps.insert("1.0", "\n".join(library.settings.session_skip_apps))
+        self.session_apps.bind("<KeyRelease>", lambda _e: self._save_session_apps())
+        ctk.CTkButton(body, text="Open sessions folder", width=160, fg_color="gray", command=self._open_sessions).pack(
+            anchor="w", padx=16, pady=(8, 4)
+        )
+
+        ctk.CTkLabel(body, text="Folder trigger").pack(anchor="w", padx=16, pady=(12, 4))
+        self.folder_frame = ctk.CTkScrollableFrame(body, height=140)
+        self.folder_frame.pack(fill="x", padx=16)
         self._render_folders()
 
-        ctk.CTkLabel(self, text="Move this library to another PC", text_color="gray").pack(anchor="w", padx=16, pady=(8, 4))
-        files = ctk.CTkFrame(self, fg_color="transparent")
+        ctk.CTkLabel(body, text="Move this library to another PC", text_color="gray").pack(anchor="w", padx=16, pady=(8, 4))
+        files = ctk.CTkFrame(body, fg_color="transparent")
         files.pack(fill="x", padx=16)
         ctk.CTkButton(files, text="Export library", width=130, command=self._export_bundle).pack(side="left")
         ctk.CTkButton(files, text="Import library", width=130, command=self._import_bundle).pack(side="left", padx=8)
 
-        ctk.CTkLabel(self, text="Repository backups", text_color="gray").pack(anchor="w", padx=16, pady=(8, 4))
-        backup_row = ctk.CTkFrame(self, fg_color="transparent")
+        ctk.CTkLabel(body, text="Repository backups", text_color="gray").pack(anchor="w", padx=16, pady=(8, 4))
+        backup_row = ctk.CTkFrame(body, fg_color="transparent")
         backup_row.pack(fill="x", padx=16)
         ctk.CTkButton(backup_row, text="Create backup", width=130, command=self._create_backup).pack(side="left")
         ctk.CTkButton(backup_row, text="Restore from backup", width=150, command=self._restore_backup).pack(
             side="left", padx=8
         )
 
-        csv_row = ctk.CTkFrame(self, fg_color="transparent")
+        csv_row = ctk.CTkFrame(body, fg_color="transparent")
         csv_row.pack(fill="x", padx=16, pady=(8, 16))
         ctk.CTkButton(csv_row, text="Import CSV", width=110, fg_color="gray", command=self._import_csv).pack(side="left")
         ctk.CTkButton(csv_row, text="Export CSV", width=110, fg_color="gray", command=self._export_csv).pack(
@@ -122,6 +143,16 @@ class SettingsWindow(ctk.CTkToplevel):
         lines = [line.strip() for line in self.apps.get("1.0", "end-1c").splitlines() if line.strip()]
         self.library.settings.disabled_apps = lines
         save_library(self.library)
+
+    def _save_session_apps(self) -> None:
+        lines = [line.strip() for line in self.session_apps.get("1.0", "end-1c").splitlines() if line.strip()]
+        self.library.settings.session_skip_apps = lines
+        save_library(self.library)
+
+    def _open_sessions(self) -> None:
+        import os
+
+        os.startfile(sessions_dir())
 
     def _export_bundle(self) -> None:
         path = filedialog.asksaveasfilename(
