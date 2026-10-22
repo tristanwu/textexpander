@@ -17,6 +17,7 @@ from expandr.session.store import (
 )
 from expandr.session.filters import chunk_has_content
 from expandr.store import save_library
+from expandr.ui.present import present
 
 
 class SessionsWindow(ctk.CTkToplevel):
@@ -95,9 +96,8 @@ class SessionsWindow(ctk.CTkToplevel):
         self.refresh()
 
     def show(self) -> None:
-        self.deiconify()
-        self.lift()
         self.refresh()
+        present(self)
 
     def refresh(self) -> None:
         live = self.recorder.live
@@ -185,6 +185,7 @@ class SessionsWindow(ctk.CTkToplevel):
         meta = load_session(self._selected_id)
         source = write_transcript(meta)
         dest = filedialog.asksaveasfilename(
+            parent=self,
             defaultextension=".md",
             initialfile=f"{meta.title}.md",
             filetypes=[("Markdown", "*.md"), ("All", "*.*")],
@@ -206,6 +207,7 @@ class SessionsWindow(ctk.CTkToplevel):
         if not messagebox.askyesno(
             "Delete session",
             f'Delete “{meta.title}”?\n\nThis removes the file from {sessions_dir()}.\nYour snippet library is not affected.',
+            parent=self,
         ):
             return
         delete_session(meta.id)

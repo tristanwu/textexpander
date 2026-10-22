@@ -26,6 +26,8 @@ Put tests next to the behavior, not the UI:
 | Session filters | `tests/test_session_filters.py` |
 | Session store | `tests/test_session_store.py` |
 | Session writer | `tests/test_session_engine.py` |
+| Snippet list rows | `tests/test_listing.py` |
+| Settings and library layout | `tests/test_window_layout.py` |
 
 Do not install a real keyboard hook in tests. Drive `KeyboardEngine._handle_key` or pure functions.
 

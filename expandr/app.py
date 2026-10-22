@@ -24,6 +24,7 @@ from expandr.ui.main_window import MainWindow
 from expandr.ui.search import ask_snippet
 from expandr.ui.session_consent import ask_session_consent
 from expandr.ui.sessions import SessionsWindow
+from expandr.ui.present import present
 from expandr.ui.settings import SettingsWindow
 from expandr.identity import APP_NAME
 from expandr.win32api import foreground_hwnd, foreground_process_name, get_clipboard_text, process_name
@@ -87,6 +88,7 @@ class ExpandrApp:
             APP_NAME,
             "The snippet library could not be read, so it was moved aside and a new library was created.\n\n"
             f"Your previous file is here:\n{quarantined}",
+            parent=self._dialog_parent(),
         )
 
 
@@ -179,11 +181,16 @@ class ExpandrApp:
             )
         self.window.show()
 
+    def _dialog_parent(self):
+        for window in (self.settings, self.sessions_window, self.window):
+            if window is not None and window.winfo_exists() and window.winfo_viewable():
+                return window
+        return self.root
+
     def show_settings(self) -> None:
         if self.settings is None or not self.settings.winfo_exists():
             self.settings = SettingsWindow(self.root, self.library, on_change=self._library_changed)
-        self.settings.lift()
-        self.settings.focus_force()
+        present(self.settings)
 
     def _show_coach(self) -> None:
         def done() -> None:
@@ -321,7 +328,7 @@ class ExpandrApp:
         from tkinter import messagebox
 
         self._refresh_tray()
-        messagebox.showerror("Sessions", f"Could not save the session.\n\n{exc}")
+        messagebox.showerror("Sessions", f"Could not save the session.\n\n{exc}", parent=self._dialog_parent())
 
     def shutdown(self) -> None:
         if self._dead:
