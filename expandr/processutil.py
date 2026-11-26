@@ -8,7 +8,18 @@ from ctypes import wintypes
 
 from expandr.store import data_dir
 
-kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+
+def _load_kernel32():
+    loader = getattr(ctypes, "WinDLL", None)
+    if loader is None:
+        return None
+    try:
+        return loader("kernel32", use_last_error=True)
+    except OSError:
+        return None
+
+
+kernel32 = _load_kernel32()
 TH32CS_SNAPPROCESS = 0x00000002
 PROCESS_TERMINATE = 0x0001
 PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
@@ -30,18 +41,23 @@ class PROCESSENTRY32W(ctypes.Structure):
     )
 
 
-kernel32.CreateToolhelp32Snapshot.argtypes = (wintypes.DWORD, wintypes.DWORD)
-kernel32.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
-kernel32.Process32FirstW.argtypes = (wintypes.HANDLE, ctypes.POINTER(PROCESSENTRY32W))
-kernel32.Process32NextW.argtypes = (wintypes.HANDLE, ctypes.POINTER(PROCESSENTRY32W))
-kernel32.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
-kernel32.OpenProcess.restype = wintypes.HANDLE
-kernel32.TerminateProcess.argtypes = (wintypes.HANDLE, wintypes.UINT)
-kernel32.GetExitCodeProcess.argtypes = (wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD))
-kernel32.CreateMutexW.argtypes = (wintypes.LPVOID, wintypes.BOOL, wintypes.LPCWSTR)
-kernel32.CreateMutexW.restype = wintypes.HANDLE
-kernel32.SetLastError.argtypes = (wintypes.DWORD,)
-kernel32.CloseHandle.argtypes = (wintypes.HANDLE,)
+def _bind_kernel32() -> None:
+    kernel32.CreateToolhelp32Snapshot.argtypes = (wintypes.DWORD, wintypes.DWORD)
+    kernel32.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
+    kernel32.Process32FirstW.argtypes = (wintypes.HANDLE, ctypes.POINTER(PROCESSENTRY32W))
+    kernel32.Process32NextW.argtypes = (wintypes.HANDLE, ctypes.POINTER(PROCESSENTRY32W))
+    kernel32.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+    kernel32.OpenProcess.restype = wintypes.HANDLE
+    kernel32.TerminateProcess.argtypes = (wintypes.HANDLE, wintypes.UINT)
+    kernel32.GetExitCodeProcess.argtypes = (wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD))
+    kernel32.CreateMutexW.argtypes = (wintypes.LPVOID, wintypes.BOOL, wintypes.LPCWSTR)
+    kernel32.CreateMutexW.restype = wintypes.HANDLE
+    kernel32.SetLastError.argtypes = (wintypes.DWORD,)
+    kernel32.CloseHandle.argtypes = (wintypes.HANDLE,)
+
+
+if kernel32 is not None:
+    _bind_kernel32()
 
 ERROR_ALREADY_EXISTS = 183
 _mutex_handle = None

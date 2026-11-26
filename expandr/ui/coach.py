@@ -10,7 +10,7 @@ class CoachDialog(ctk.CTkToplevel):
         super().__init__(master)
         self.title(APP_NAME)
         self.attributes("-topmost", True)
-        self.geometry("420x260")
+        self.geometry("420x300")
         self.resizable(False, False)
         self._on_done = on_done
         ctk.CTkLabel(self, text=f"{APP_NAME} is running in the tray", font=ctk.CTkFont(size=16, weight="bold")).pack(
@@ -22,11 +22,12 @@ class CoachDialog(ctk.CTkToplevel):
                 "Type /ty in Notepad to try it.\n"
                 "If Text Blaze for Windows is running, pause it first.\n"
                 "Ctrl+Shift+/ searches snippets.\n"
-                "Ctrl+Shift+P pauses expansion.\n"
+                "Pause expansion from the tray icon. It is not remembered after you quit.\n"
                 "Open the tray icon when you want the library."
             ),
             justify="left",
             anchor="w",
+            wraplength=380,
         ).pack(fill="x", padx=20, pady=8)
         ctk.CTkButton(self, text="Got it", width=100, command=self._close).pack(pady=(8, 20))
         self.protocol("WM_DELETE_WINDOW", self._close)

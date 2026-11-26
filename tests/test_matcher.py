@@ -36,6 +36,19 @@ def test_longer_prefix_waits():
     assert has_longer_prefix("/do", library)
 
 
+def test_grillme_matches_only_the_whole_slash_shortcut():
+    library = _lib(("/grillme", TriggerMode.WORD_START))
+    matches = find_matches("/grillme", library)
+    assert matches and matches[0][0].shortcut == "/grillme"
+    assert matches[0][1] == len("/grillme")
+    assert matches[0][2] == ""
+    assert find_matches("/grill", library) == []
+    assert find_matches("/grillmee", library) == []
+    assert find_matches("x/grillme", library) == []
+    spaced = find_matches(" /grillme", library)
+    assert spaced and spaced[0][0].shortcut == "/grillme"
+
+
 def test_single_slash_is_not_armed():
     library = _lib(("/", TriggerMode.WORD_START))
     assert find_matches(" /", library) == []

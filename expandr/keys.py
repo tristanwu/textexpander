@@ -81,6 +81,7 @@ def fallback_char(vk: int, shift: bool, caps: bool = False) -> str | None:
 
 
 def vk_to_char(vk: int, mods: int) -> str | None:
+    """US-layout character for a virtual key. Other layouts are not mapped."""
     if vk == VK_RETURN:
         return "\n"
     if vk == VK_TAB:

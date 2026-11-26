@@ -32,3 +32,5 @@ What becomes easier, harder, or off-limits.
 - [0006 — Git-backed library backups](0006-git-backed-library-backups.md)
 - [0007 — Task Manager startup registration](0007-task-manager-startup-registration.md)
 - [0008 — Local typing sessions beside the expander](0008-local-typing-sessions.md)
+- [0009 — Restore the clipboard only if it is still ours](0009-clipboard-restore.md)
+- [0010 — Pause is visible, tray-only, and not sticky](0010-pause-is-visible-and-not-sticky.md)

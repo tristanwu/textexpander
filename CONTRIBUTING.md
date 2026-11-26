@@ -23,6 +23,8 @@ Put tests next to the behavior, not the UI:
 | Repository backups | `tests/test_backup.py` |
 | Library load/save | `tests/test_store.py` |
 | Expand orchestration | `tests/test_expand.py` |
+| Clipboard insert | `tests/test_insert.py` |
+| Pause and tray state | `tests/test_pause.py` |
 | Session filters | `tests/test_session_filters.py` |
 | Session store | `tests/test_session_store.py` |
 | Session writer | `tests/test_session_engine.py` |

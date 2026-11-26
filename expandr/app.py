@@ -7,11 +7,11 @@ import threading
 from pathlib import Path
 
 import customtkinter as ctk
-import pystray
 
 from expandr.hook import KeyboardEngine, MatchEvent
 from expandr.icon import make_icon
 from expandr.insert import insert_expansion
+from expandr.pause import cleared_pause_message, toggle_message, tray_title
 from expandr.parser import collect_fields, evaluate, parse
 from expandr.processutil import become_only_instance, text_blaze_running
 from expandr.session.engine import SessionRecorder
@@ -39,6 +39,7 @@ class ExpandrApp:
         self.root.title(APP_NAME)
         loaded = load_library()
         self.library = loaded.library
+        self._cleared_pause = loaded.cleared_pause
         if loaded.quarantined is not None:
             self.root.after(100, lambda path=loaded.quarantined: self._warn_recovered_library(path))
         startup_enabled = ensure_startup_registration(self.library.settings.start_with_windows)
@@ -211,13 +212,38 @@ class ExpandrApp:
         self.library.settings.paused = not self.library.settings.paused
         save_library(self.library)
         self._refresh_tray()
+        self._notify(toggle_message(self.library.settings.paused))
 
     def _start_tray(self) -> None:
-        icon = make_icon(64)
-        self.tray = pystray.Icon(APP_NAME, icon, APP_NAME, self._tray_menu())
-        threading.Thread(target=self.tray.run, name="expandr-tray", daemon=True).start()
+        import pystray
+
+        self.tray = pystray.Icon(APP_NAME, self._tray_image(), self._tray_title(), self._tray_menu())
+        threading.Thread(target=self.tray.run, args=(self._tray_ready,), name="expandr-tray", daemon=True).start()
+
+    def _tray_ready(self, icon) -> None:
+        icon.visible = True
+        if self._cleared_pause:
+            self._notify(cleared_pause_message(), icon)
+
+    def _notify(self, message: str, icon=None) -> None:
+        tray = icon or self.tray
+        if tray is None:
+            return
+        try:
+            tray.notify(message, APP_NAME)
+        except Exception:
+            pass
+
+    def _tray_image(self):
+        return make_icon(
+            64,
+            recording=self.recorder.live and not self.recorder.paused,
+            paused=self.library.settings.paused,
+        )
 
     def _tray_menu(self):
+        import pystray
+
         paused = self.library.settings.paused
         live = self.recorder.live
         session_paused = self.recorder.paused
@@ -249,22 +275,22 @@ class ExpandrApp:
         return pystray.Menu(*items)
 
     def _tray_title(self) -> str:
-        parts = [APP_NAME]
-        if self.recorder.live:
-            minutes = 0
-            if self.recorder.meta and self.recorder.meta.started_at:
-                try:
-                    from datetime import datetime, timezone
+        minutes = 0
+        if self.recorder.live and self.recorder.meta and self.recorder.meta.started_at:
+            try:
+                from datetime import datetime, timezone
 
-                    started = datetime.fromisoformat(self.recorder.meta.started_at.replace("Z", "+00:00"))
-                    minutes = int((datetime.now(timezone.utc) - started).total_seconds() // 60)
-                except ValueError:
-                    minutes = 0
-            state = "session paused" if self.recorder.paused else "session on"
-            parts.append(f"{state} · {minutes} min")
-        if self.library.settings.paused:
-            parts.append("expansion paused")
-        return " · ".join(parts) if len(parts) > 1 else APP_NAME
+                started = datetime.fromisoformat(self.recorder.meta.started_at.replace("Z", "+00:00"))
+                minutes = int((datetime.now(timezone.utc) - started).total_seconds() // 60)
+            except ValueError:
+                minutes = 0
+        return tray_title(
+            APP_NAME,
+            expansion_paused=self.library.settings.paused,
+            session_live=self.recorder.live,
+            session_paused=self.recorder.paused,
+            session_minutes=minutes,
+        )
 
     def _session_banner(self) -> str:
         if not self.recorder.live:
@@ -278,7 +304,7 @@ class ExpandrApp:
             self.tray.menu = self._tray_menu()
             self.tray.title = self._tray_title()
             try:
-                self.tray.icon = make_icon(64, recording=self.recorder.live and not self.recorder.paused)
+                self.tray.icon = self._tray_image()
             except Exception:
                 pass
 

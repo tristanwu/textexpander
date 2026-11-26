@@ -20,4 +20,4 @@ Import also accepts a raw `%AppData%\TextExpander\library.json`. Replace swaps s
 CSV import/export stays as a secondary spreadsheet path.
 
 ## Consequences
-A single file is enough to set up a new PC. Users can also copy `library.json` by hand. Schema changes must bump `version` and keep reading version 1.
+A single file is enough to set up a new PC. Users can also copy `library.json` by hand. Schema changes must bump `version` and keep reading version 1. A saved `paused` flag is cleared on the next launch ([ADR 0010](0010-pause-is-visible-and-not-sticky.md)); import replace still unpauses.
