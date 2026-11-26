@@ -98,6 +98,7 @@ def _bind_win32() -> None:
     user32.GetClipboardData.restype = wintypes.HANDLE
     user32.IsClipboardFormatAvailable.argtypes = (wintypes.UINT,)
     user32.IsClipboardFormatAvailable.restype = wintypes.BOOL
+    user32.GetClipboardSequenceNumber.restype = wintypes.DWORD
 
     kernel32.GlobalAlloc.argtypes = (wintypes.UINT, ctypes.c_size_t)
     kernel32.GlobalAlloc.restype = wintypes.HGLOBAL
@@ -117,7 +118,6 @@ def _bind_win32() -> None:
     )
     kernel32.QueryFullProcessImageNameW.restype = wintypes.BOOL
     kernel32.GetCurrentThreadId.restype = wintypes.DWORD
-    kernel32.GetClipboardSequenceNumber.restype = wintypes.DWORD
 
 
 if user32 is not None and kernel32 is not None:
@@ -277,9 +277,9 @@ def _open_clipboard(retries: int = 8) -> bool:
 
 
 def clipboard_sequence() -> int:
-    if kernel32 is None:
-        raise OSError("kernel32 is unavailable")
-    return int(kernel32.GetClipboardSequenceNumber())
+    if user32 is None:
+        raise OSError("user32 is unavailable")
+    return int(user32.GetClipboardSequenceNumber())
 
 
 def get_clipboard_text() -> str | None:
