@@ -67,10 +67,16 @@ Optional: **Start with Windows**. TextExpander registers itself in Windows start
 .venv\Scripts\python.exe -m pytest
 ```
 
-Write the failing test first. Decisions that should stick go in `docs/adr/`. See `CONTRIBUTING.md`.
+Write the failing test first. Decisions that should stick go in `docs/adr/`. See `CONTRIBUTING.md`. What has shipped, and the next milestones, are in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 The Python package is still `expandr` (`python -m expandr`). The name you see in the tray and Start menu is TextExpander.
 
 ## Why this stack
 
 A fresh Windows laptop should not need Visual Studio, a .NET SDK, or a global Python install. TextExpander is written in Python so it is easy to change, then packaged with PyInstaller into one `.exe` the laptop can run as-is.
+
+## License
+
+TextExpander is released under the [MIT License](LICENSE). Copyright 2026 Tristan Wu.
+
+The snippet library backups in `backups/` are shared freely for others to use under the same license.
