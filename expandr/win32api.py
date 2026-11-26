@@ -5,8 +5,18 @@ import time
 from ctypes import wintypes
 from pathlib import Path
 
-user32 = ctypes.WinDLL("user32", use_last_error=True)
-kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+def _load_dll(name: str):
+    loader = getattr(ctypes, "WinDLL", None)
+    if loader is None:
+        return None
+    try:
+        return loader(name, use_last_error=True)
+    except OSError:
+        return None
+
+
+user32 = _load_dll("user32")
+kernel32 = _load_dll("kernel32")
 
 KEYEVENTF_KEYUP = 0x0002
 KEYEVENTF_UNICODE = 0x0004
@@ -65,47 +75,53 @@ class INPUT(ctypes.Structure):
     _fields_ = (("type", wintypes.DWORD), ("u", _INPUTUNION))
 
 
-user32.SendInput.argtypes = (wintypes.UINT, ctypes.POINTER(INPUT), ctypes.c_int)
-user32.SendInput.restype = wintypes.UINT
-user32.GetForegroundWindow.restype = wintypes.HWND
-user32.SetForegroundWindow.argtypes = (wintypes.HWND,)
-user32.SetForegroundWindow.restype = wintypes.BOOL
-user32.GetWindowThreadProcessId.argtypes = (wintypes.HWND, ctypes.POINTER(wintypes.DWORD))
-user32.GetWindowThreadProcessId.restype = wintypes.DWORD
-user32.AttachThreadInput.argtypes = (wintypes.DWORD, wintypes.DWORD, wintypes.BOOL)
-user32.MapVirtualKeyW.argtypes = (wintypes.UINT, wintypes.UINT)
-user32.MapVirtualKeyW.restype = wintypes.UINT
-user32.GetAsyncKeyState.argtypes = (ctypes.c_int,)
-user32.GetAsyncKeyState.restype = wintypes.SHORT
-user32.OpenClipboard.argtypes = (wintypes.HWND,)
-user32.OpenClipboard.restype = wintypes.BOOL
-user32.CloseClipboard.restype = wintypes.BOOL
-user32.EmptyClipboard.restype = wintypes.BOOL
-user32.SetClipboardData.argtypes = (wintypes.UINT, wintypes.HANDLE)
-user32.SetClipboardData.restype = wintypes.HANDLE
-user32.GetClipboardData.argtypes = (wintypes.UINT,)
-user32.GetClipboardData.restype = wintypes.HANDLE
-user32.IsClipboardFormatAvailable.argtypes = (wintypes.UINT,)
-user32.IsClipboardFormatAvailable.restype = wintypes.BOOL
+def _bind_win32() -> None:
+    user32.SendInput.argtypes = (wintypes.UINT, ctypes.POINTER(INPUT), ctypes.c_int)
+    user32.SendInput.restype = wintypes.UINT
+    user32.GetForegroundWindow.restype = wintypes.HWND
+    user32.SetForegroundWindow.argtypes = (wintypes.HWND,)
+    user32.SetForegroundWindow.restype = wintypes.BOOL
+    user32.GetWindowThreadProcessId.argtypes = (wintypes.HWND, ctypes.POINTER(wintypes.DWORD))
+    user32.GetWindowThreadProcessId.restype = wintypes.DWORD
+    user32.AttachThreadInput.argtypes = (wintypes.DWORD, wintypes.DWORD, wintypes.BOOL)
+    user32.MapVirtualKeyW.argtypes = (wintypes.UINT, wintypes.UINT)
+    user32.MapVirtualKeyW.restype = wintypes.UINT
+    user32.GetAsyncKeyState.argtypes = (ctypes.c_int,)
+    user32.GetAsyncKeyState.restype = wintypes.SHORT
+    user32.OpenClipboard.argtypes = (wintypes.HWND,)
+    user32.OpenClipboard.restype = wintypes.BOOL
+    user32.CloseClipboard.restype = wintypes.BOOL
+    user32.EmptyClipboard.restype = wintypes.BOOL
+    user32.SetClipboardData.argtypes = (wintypes.UINT, wintypes.HANDLE)
+    user32.SetClipboardData.restype = wintypes.HANDLE
+    user32.GetClipboardData.argtypes = (wintypes.UINT,)
+    user32.GetClipboardData.restype = wintypes.HANDLE
+    user32.IsClipboardFormatAvailable.argtypes = (wintypes.UINT,)
+    user32.IsClipboardFormatAvailable.restype = wintypes.BOOL
 
-kernel32.GlobalAlloc.argtypes = (wintypes.UINT, ctypes.c_size_t)
-kernel32.GlobalAlloc.restype = wintypes.HGLOBAL
-kernel32.GlobalLock.argtypes = (wintypes.HGLOBAL,)
-kernel32.GlobalLock.restype = ctypes.c_void_p
-kernel32.GlobalUnlock.argtypes = (wintypes.HGLOBAL,)
-kernel32.GlobalSize.argtypes = (wintypes.HGLOBAL,)
-kernel32.GlobalSize.restype = ctypes.c_size_t
-kernel32.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
-kernel32.OpenProcess.restype = wintypes.HANDLE
-kernel32.CloseHandle.argtypes = (wintypes.HANDLE,)
-kernel32.QueryFullProcessImageNameW.argtypes = (
-    wintypes.HANDLE,
-    wintypes.DWORD,
-    wintypes.LPWSTR,
-    ctypes.POINTER(wintypes.DWORD),
-)
-kernel32.QueryFullProcessImageNameW.restype = wintypes.BOOL
-kernel32.GetCurrentThreadId.restype = wintypes.DWORD
+    kernel32.GlobalAlloc.argtypes = (wintypes.UINT, ctypes.c_size_t)
+    kernel32.GlobalAlloc.restype = wintypes.HGLOBAL
+    kernel32.GlobalLock.argtypes = (wintypes.HGLOBAL,)
+    kernel32.GlobalLock.restype = ctypes.c_void_p
+    kernel32.GlobalUnlock.argtypes = (wintypes.HGLOBAL,)
+    kernel32.GlobalSize.argtypes = (wintypes.HGLOBAL,)
+    kernel32.GlobalSize.restype = ctypes.c_size_t
+    kernel32.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+    kernel32.OpenProcess.restype = wintypes.HANDLE
+    kernel32.CloseHandle.argtypes = (wintypes.HANDLE,)
+    kernel32.QueryFullProcessImageNameW.argtypes = (
+        wintypes.HANDLE,
+        wintypes.DWORD,
+        wintypes.LPWSTR,
+        ctypes.POINTER(wintypes.DWORD),
+    )
+    kernel32.QueryFullProcessImageNameW.restype = wintypes.BOOL
+    kernel32.GetCurrentThreadId.restype = wintypes.DWORD
+    kernel32.GetClipboardSequenceNumber.restype = wintypes.DWORD
+
+
+if user32 is not None and kernel32 is not None:
+    _bind_win32()
 
 
 def _key(vk: int, flags: int = 0, scan: int = 0) -> INPUT:
@@ -205,6 +221,8 @@ def alt_down() -> bool:
 
 
 def foreground_hwnd() -> int:
+    if user32 is None:
+        raise OSError("user32 is unavailable")
     return int(user32.GetForegroundWindow() or 0)
 
 
@@ -256,6 +274,12 @@ def _open_clipboard(retries: int = 8) -> bool:
             return True
         time.sleep(0.02)
     return False
+
+
+def clipboard_sequence() -> int:
+    if kernel32 is None:
+        raise OSError("kernel32 is unavailable")
+    return int(kernel32.GetClipboardSequenceNumber())
 
 
 def get_clipboard_text() -> str | None:

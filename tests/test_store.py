@@ -69,6 +69,53 @@ def test_second_corrupt_keeps_the_first_quarantine(tmp_path, monkeypatch):
     assert second.quarantined.read_text(encoding="utf-8") == "second-bad"
 
 
+def test_load_clears_a_persisted_pause_and_keeps_snippets(tmp_path, monkeypatch):
+    monkeypatch.setenv("APPDATA", str(tmp_path))
+    library = default_library()
+    library.settings.paused = True
+    save_library(library)
+    before = [(snippet.shortcut, snippet.content) for _folder, snippet in library.all_snippets()]
+    text_while_paused = library_path().read_text(encoding="utf-8")
+
+    loaded = load_library()
+
+    assert loaded.cleared_pause is True
+    assert loaded.library.settings.paused is False
+    after = [(snippet.shortcut, snippet.content) for _folder, snippet in loaded.library.all_snippets()]
+    assert after == before
+    saved = json.loads(library_path().read_text(encoding="utf-8"))
+    assert saved["settings"]["paused"] is False
+    assert "paused" in text_while_paused
+
+
+def test_load_clears_pause_in_memory_when_the_rewrite_fails(tmp_path, monkeypatch):
+    monkeypatch.setenv("APPDATA", str(tmp_path))
+    library = default_library()
+    library.settings.paused = True
+    save_library(library)
+
+    def boom(self, *_args, **_kwargs):
+        raise OSError("read only")
+
+    monkeypatch.setattr("pathlib.Path.write_text", boom)
+    loaded = load_library()
+    assert loaded.cleared_pause is True
+    assert loaded.library.settings.paused is False
+
+
+def test_load_does_not_rewrite_a_library_that_was_not_paused(tmp_path, monkeypatch):
+    monkeypatch.setenv("APPDATA", str(tmp_path))
+    library = default_library()
+    save_library(library)
+    text = library_path().read_text(encoding="utf-8")
+
+    loaded = load_library()
+
+    assert loaded.cleared_pause is False
+    assert loaded.library.settings.paused is False
+    assert library_path().read_text(encoding="utf-8") == text
+
+
 def test_save_library_propagates_oserror(tmp_path, monkeypatch):
     monkeypatch.setenv("APPDATA", str(tmp_path))
     library = default_library()

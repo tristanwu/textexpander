@@ -5,6 +5,7 @@ from tkinter import messagebox
 import customtkinter as ctk
 
 from expandr.identity import APP_NAME
+from expandr.pause import PAUSED_STATUS
 from expandr.models import Folder, Library, Snippet, new_id, shortcut_is_armed
 from expandr.store import save_library
 from expandr.ui.listing import folders_for_list, snippet_row_text
@@ -292,7 +293,7 @@ class MainWindow(ctk.CTkToplevel):
         armed = sum(1 for _, snippet in self.library.all_snippets() if shortcut_is_armed(snippet.shortcut))
         parts = [f"{self.library.snippet_count()} snippets", f"{armed} armed"]
         if self.library.settings.paused:
-            parts.append("paused")
+            parts.append(PAUSED_STATUS)
         detail: list[str] = []
         if self.status_provider:
             info = self.status_provider()

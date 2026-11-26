@@ -1,4 +1,5 @@
 from expandr.hook import KeyboardEngine, MatchEvent
+from expandr.keys import MOD_CTRL, MOD_SHIFT, VK_P
 from expandr.models import Folder, Library, Snippet, TriggerMode, new_id
 
 
@@ -42,6 +43,80 @@ def test_busy_does_not_match():
     engine._handle_key(0x54, 0)
     engine._handle_key(0x59, 0)
     assert hits == []
+
+
+def _type(engine: KeyboardEngine, text: str) -> None:
+    for char in text:
+        if char == "/":
+            engine._handle_key(0xBF, 0)
+        elif char == " ":
+            engine._handle_key(0x20, 0)
+        else:
+            engine._handle_key(ord(char.upper()), 0)
+
+
+def _grill_library() -> Library:
+    folder = Folder(id=new_id(), name="Agentic", trigger=TriggerMode.WORD_START)
+    folder.snippets.append(
+        Snippet(id=new_id(), label="Grill me", shortcut="/grillme", content="Ask hard questions.")
+    )
+    return Library(folders=[folder])
+
+
+def test_grillme_expands_and_near_misses_do_not():
+    hits: list[MatchEvent] = []
+    library = _grill_library()
+    engine = KeyboardEngine(
+        library_provider=lambda: library,
+        on_match=hits.append,
+        on_search=lambda: None,
+        on_pause=lambda: None,
+        is_paused=lambda: False,
+        is_app_disabled=lambda: False,
+    )
+    _type(engine, "/grill")
+    assert hits == []
+    _type(engine, "me")
+    assert hits and hits[0].snippet.shortcut == "/grillme"
+    assert hits[0].delete_count == len("/grillme")
+    hits.clear()
+    _type(engine, "x/grillme")
+    assert hits == []
+    _type(engine, " /grillme")
+    assert hits and hits[0].snippet.shortcut == "/grillme"
+
+
+def test_grillme_does_not_expand_while_paused():
+    hits: list[MatchEvent] = []
+    library = _grill_library()
+    engine = KeyboardEngine(
+        library_provider=lambda: library,
+        on_match=hits.append,
+        on_search=lambda: None,
+        on_pause=lambda: None,
+        is_paused=lambda: True,
+        is_app_disabled=lambda: False,
+    )
+    _type(engine, "/grillme")
+    assert hits == []
+
+
+def test_ctrl_shift_p_does_not_pause_expansion():
+    pauses: list[str] = []
+    hits: list[MatchEvent] = []
+    library = _grill_library()
+    engine = KeyboardEngine(
+        library_provider=lambda: library,
+        on_match=hits.append,
+        on_search=lambda: None,
+        on_pause=lambda: pauses.append("pause"),
+        is_paused=lambda: False,
+        is_app_disabled=lambda: False,
+    )
+    engine._handle_key(VK_P, MOD_CTRL | MOD_SHIFT)
+    assert pauses == []
+    _type(engine, "/grillme")
+    assert hits and hits[0].snippet.shortcut == "/grillme"
 
 
 def test_on_key_fires_when_paused_and_still_matches_when_not():

@@ -75,7 +75,7 @@ class SettingsWindow(ctk.CTkToplevel):
         ctk.CTkSwitch(
             body, text="Show in Start menu / search", variable=self.start_menu_var, command=self._toggle_start_menu
         ).pack(anchor="w", padx=16, pady=6)
-        ctk.CTkLabel(body, text="Ctrl+Shift+/  search     Ctrl+Shift+P  pause", text_color="gray").pack(
+        ctk.CTkLabel(body, text="Ctrl+Shift+/  search. Pause expansion from the tray icon.", text_color="gray").pack(
             anchor="w", padx=16, pady=(0, 4)
         )
 

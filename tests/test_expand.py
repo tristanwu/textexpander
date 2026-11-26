@@ -1,6 +1,10 @@
+import sys
+import types
+
 from expandr.app import ExpandrApp
 from expandr.hook import KeyboardEngine, MatchEvent
 from expandr.models import Folder, Library, Snippet, TriggerMode, new_id
+from expandr.store import library_path
 
 
 def _library(content: str = "Thank you") -> Library:
@@ -21,7 +25,11 @@ def _app(library: Library, *, disabled: bool = False):
         is_paused=lambda: False,
         is_app_disabled=lambda: disabled,
     )
-    app.recorder = type("Recorder", (), {"live": False, "note_expand": lambda self, _shortcut: None})()
+    app.recorder = type(
+        "Recorder",
+        (),
+        {"live": False, "paused": False, "note_expand": lambda self, _shortcut: None},
+    )()
     app._app_disabled = lambda: disabled
     return app
 
@@ -73,3 +81,77 @@ def test_expand_insert_failure_sets_last_insert_and_error_log(monkeypatch, tmp_p
     assert log.exists()
     assert "RuntimeError" in log.read_text(encoding="utf-8")
     assert "send failed" in log.read_text(encoding="utf-8")
+
+
+def _fake_pystray(monkeypatch):
+    fake = types.ModuleType("pystray")
+
+    class MenuItem:
+        def __init__(self, text, action=None, default=False):
+            self.text = text
+            self.action = action
+            self.default = default
+
+    class Menu:
+        SEPARATOR = object()
+
+        def __init__(self, *items):
+            self.items = items
+
+    fake.MenuItem = MenuItem
+    fake.Menu = Menu
+    monkeypatch.setitem(sys.modules, "pystray", fake)
+
+
+def test_toggle_pause_notifies_and_marks_the_tray(monkeypatch, tmp_path):
+    monkeypatch.setenv("APPDATA", str(tmp_path))
+    _fake_pystray(monkeypatch)
+    notes = []
+
+    class Tray:
+        def __init__(self):
+            self.menu = None
+            self.title = ""
+            self.icon = None
+
+        def notify(self, message, title=None):
+            notes.append((title, message))
+
+    app = _app(_library())
+    app.tray = Tray()
+    app._toggle_pause()
+    assert app.library.settings.paused is True
+    assert notes and "paused" in notes[0][1].lower()
+    assert "EXPANSION PAUSED" in app.tray.title
+    assert app.tray.icon.getpixel((32, 8))[:3] == (180, 83, 9)
+    labels = [item.text for item in app.tray.menu.items if hasattr(item, "text")]
+    assert "Resume expansion" in labels
+    saved = library_path().read_text(encoding="utf-8")
+    assert '"paused": true' in saved
+    notes.clear()
+    app._toggle_pause()
+    assert app.library.settings.paused is False
+    assert "resumed" in notes[0][1].lower()
+
+
+def test_cleared_pause_notifies_once_the_tray_is_ready(monkeypatch, tmp_path):
+    monkeypatch.setenv("APPDATA", str(tmp_path))
+    notes = []
+
+    class Tray:
+        def __init__(self):
+            self.visible = False
+
+        def notify(self, message, title=None):
+            notes.append((title, message))
+
+    app = _app(_library())
+    tray = Tray()
+    app._cleared_pause = True
+    app._tray_ready(tray)
+    assert tray.visible is True
+    assert notes and "cleared" in notes[0][1].lower()
+    notes.clear()
+    app._cleared_pause = False
+    app._tray_ready(tray)
+    assert notes == []

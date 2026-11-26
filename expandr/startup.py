@@ -4,7 +4,10 @@ import os
 import shutil
 import sys
 from pathlib import Path
-import winreg
+try:
+    import winreg
+except ImportError:  # non-Windows test runs
+    winreg = None  # type: ignore[assignment]
 
 from expandr.icon import write_ico
 from expandr.identity import APP_NAME, LEGACY_APP_NAME

@@ -34,6 +34,7 @@ def library_path() -> Path:
 class LoadResult:
     library: Library
     quarantined: Path | None = None
+    cleared_pause: bool = False
 
 
 def _quarantine_library(path: Path) -> Path:
@@ -64,7 +65,20 @@ def load_library() -> LoadResult:
         library = default_library()
         save_library(library)
         return LoadResult(library, quarantined=quarantined)
-    return LoadResult(library)
+    cleared_pause = _clear_persisted_pause(library)
+    return LoadResult(library, cleared_pause=cleared_pause)
+
+
+def _clear_persisted_pause(library: Library) -> bool:
+    """Pause is for this run only. A saved pause must not survive the next launch."""
+    if not library.settings.paused:
+        return False
+    library.settings.paused = False
+    try:
+        save_library(library)
+    except OSError:
+        pass
+    return True
 
 
 def save_library(library: Library) -> None:
